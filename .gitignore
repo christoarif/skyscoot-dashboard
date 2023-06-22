@@ -1,0 +1,29 @@
+# Exclude common OS files
+.DS_Store
+
+# Exclude common IDE project files
+.idea
+*.iml
+.project
+.settings
+.classpath
+.checkstyle
+.vscode/
+**/.vscode/*
+
+# Exclude .env files
+.env
+
+#  Local .terraform directories
+**/.terraform/*
+.terraform/
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# .tfvars files
+*.tfvars
+
+# Hashicorp Lock files
+*.lock.hcl
