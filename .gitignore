@@ -27,3 +27,6 @@
 
 # Hashicorp Lock files
 *.lock.hcl
+
+
+*.csv
