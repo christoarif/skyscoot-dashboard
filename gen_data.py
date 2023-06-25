@@ -3,7 +3,7 @@ import random
 from datetime import datetime, timedelta
 
 # Define column names
-columns = ["flightNumber", "departureTime", "OrderID", "ItemID", "ItemName", "UserID", "SeatNumber", "itemPrice", "quantity", "status", "orderTime", "itemWeight"]
+columns = ["flightNumber", "departureCity", "arrivalCity", "departureTime", "OrderID", "ItemID", "ItemName", "UserID", "SeatNumber", "itemPrice", "quantity", "status", "orderTime", "itemWeight"]
 
 # Specify the file path
 csv_file_path = "mock_data.csv"
@@ -24,6 +24,22 @@ flight_top_items = {
     "108": [4, 5, 8, 9],   # Flight 108 has top items with item IDs 4, 5, 8, 9
     "109": [6, 7],         # Flight 109 has top items with item IDs 6, 7
     "110": [8, 9, 10]      # Flight 110 has top items with item IDs 8, 9, 10
+}
+
+# departure, arrival
+
+flight_routes = {
+    "100": ["Changi", "Bangkok"],  
+    "101": ["Changi", "Jakarta"],   
+    "102": ["Jakarta", "Bangkok"],   
+    "103": ["Manila", "Changi"],    
+    "104": ["Changi", "Kuching"],    
+    "105": ["Changi", "Melbourne"],     
+    "106": ["Bangkok", "Changi"],    
+    "107": ["Jakarta", "Changi"],       
+    "108": ["Changi", "Manila"],  
+    "109": ["Jakarta", "Bangkok"],     
+    "110": ["Melbourne", "Changi"]      
 }
 
 # Define the item lookup with item name, price, and weight
@@ -55,6 +71,14 @@ for i in range(num_rows):
     departure_time = random.choice(flight_departure_times[flight_number])
     order_id = i + 1  # Assign order ID as the index value
 
+    if flight_number in flight_top_items:
+        flight_route = flight_routes[flight_number]
+        departure_place = flight_route[0]
+        arrival_place = flight_route[1]
+    else:
+        departure_place = "XXX"
+        arrival_place = "YYY"
+    
     if flight_number in flight_top_items and bool(random.getrandbits(1)):
         # Flight has top items, randomly select majority item ID from top items
         item_id = random.choice(flight_top_items[flight_number])
@@ -67,11 +91,16 @@ for i in range(num_rows):
     user_id = random.randint(1, 100)
     seat_number = random.choice(["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3"])
     quantity = random.randint(1, 5)
-    status = random.choice(["Out of Stock", "Success"])
+    status="Success"
+    if i>2750:
+        status = "Out of Stock"
+    #status = random.choice(["Out of Stock", "Success"])
     order_time = departure_time + timedelta(hours=random.randint(0, 12))
 
     data.append([
         flight_number,
+        departure_place,
+        arrival_place,
         departure_time.strftime("%Y-%m-%d %H:%M:%S"),
         order_id,
         item_id,
