@@ -2,7 +2,7 @@ import pandas as pd
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 import plotly.colors
@@ -19,25 +19,24 @@ app.layout = dbc.Container([
     html.H1("SkyScoot Dashboard"),
     dbc.Row([
         dbc.Col([
+            html.Label("Destination"),
+            dcc.Dropdown(
+                id='destination-dropdown',
+                options=[{'label': city, 'value': city} for city in df['arrivalCity'].unique()],
+                placeholder="Select Destination City",
+                clearable=False
+            )
+        ]),
+        dbc.Col([
             html.Label("Flight Number"),
             dcc.Dropdown(
                 id='flight-dropdown',
-                options=[{'label': num, 'value': num} for num in df['flightNumber'].unique()],
-                value=df['flightNumber'].unique()[0]
-            )
-        ]),
-        
-        dbc.Col([
-            html.Label("Date Range"),
-            dcc.DatePickerRange(
-                id='date-range-picker',
-                start_date=df['departureTime'].min(),
-                end_date=df['departureTime'].max(),
-                display_format='YYYY-MM-DD',
+                options=[{'label': 'All', 'value': 'All'}],
+                placeholder="Select Flight Number",
+                clearable=False
             )
         ])
     ]),
-
     dbc.Row([
         dbc.Col([
             dcc.Graph(id='order-status')
@@ -53,17 +52,32 @@ app.layout = dbc.Container([
     ])
 ])
 
-
+# Update flight dropdown options based on selected destination
+@app.callback(
+    Output('flight-dropdown', 'options'),
+    Output('flight-dropdown', 'disabled'),
+    Input('destination-dropdown', 'value')
+)
+def update_flight_dropdown_options(destination):
+    if destination:
+        flight_numbers = df[df['arrivalCity'] == destination]['flightNumber'].unique()
+        options = [{'label': 'All', 'value': 'All'}] + [{'label': num, 'value': num} for num in flight_numbers]
+        return options, False
+    else:
+        return [], True
 
 # Define the order status callback
 @app.callback(
     Output('order-status', 'figure'),
     Input('flight-dropdown', 'value'),
-    Input('date-range-picker', 'start_date'),
-    Input('date-range-picker', 'end_date')
+    State('destination-dropdown', 'value')
 )
-def update_order_status(flight_number, start_date, end_date):
-    filtered_data = df[(df['flightNumber'] == flight_number) & (df['departureTime'].between(start_date, end_date))]
+def update_order_status(flight_number, destination):
+    if flight_number and destination and flight_number != 'All':
+        filtered_data = df[(df['arrivalCity'] == destination) & (df['flightNumber'] == flight_number)]
+    else:
+        filtered_data = df[df['arrivalCity'] == destination]
+
     status_counts = filtered_data['status'].value_counts()
 
     # Assign colors based on order status
@@ -72,7 +86,7 @@ def update_order_status(flight_number, start_date, end_date):
     fig = {
         'data': [go.Bar(x=status_counts.index, y=status_counts.values, marker=dict(color=colors))],
         'layout': {
-            'title': f"Order Status for Flight {flight_number} for the Time Range",
+            'title': f"Order Status for Flight {flight_number} Destination: {destination}",
             'xaxis': {'title': 'Status'},
             'yaxis': {'title': 'Count'}
         }
@@ -84,12 +98,14 @@ def update_order_status(flight_number, start_date, end_date):
     Output('item-quantity-bar', 'figure'),
     Output('item-quantity-pie', 'figure'),
     Input('flight-dropdown', 'value'),
-    Input('date-range-picker', 'start_date'),
-    Input('date-range-picker', 'end_date')
+    State('destination-dropdown', 'value')
 )
+def update_item_quantity(flight_number, destination):
+    if flight_number and destination and flight_number != 'All':
+        filtered_data = df[(df['arrivalCity'] == destination) & (df['flightNumber'] == flight_number)]
+    else:
+        filtered_data = df[df['arrivalCity'] == destination]
 
-def update_item_quantity(flight_number, start_date , end_date):
-    filtered_data = df[(df['flightNumber'] == flight_number) & (df['departureTime'].between(start_date, end_date))]
     item_counts = filtered_data.groupby('ItemName')['quantity'].sum()
     item_statuses = filtered_data.groupby(['ItemName', 'status'])['quantity'].sum().unstack(fill_value=0)
 
@@ -111,11 +127,11 @@ def update_item_quantity(flight_number, start_date , end_date):
     bar_chart_fig = {
         'data': bar_chart_data,
         'layout': {
-            'title': f"Items Sold for Flight {flight_number} for the Time Range",
+            'title': f"Items Sold for Flight {flight_number} Destination: {destination}",
             'xaxis': {'title': 'Item Name'},
             'yaxis': {'title': 'Quantity'},
             'barmode': 'stack',
-            'showlegend': False 
+            'showlegend': False
         }
     }
 
@@ -127,22 +143,11 @@ def update_item_quantity(flight_number, start_date , end_date):
     pie_chart_fig = {
         'data': [go.Pie(labels=pie_labels, values=pie_values, marker=dict(colors=pie_colors))],
         'layout': {
-            'title': f"Items Sold (Pie Chart) for Flight {flight_number} for the Time Range"
+            'title': f"Items Sold (Pie Chart) for Flight {flight_number} Destination: {destination}"
         }
     }
 
     return bar_chart_fig, pie_chart_fig
-
-
-# Update departure dropdown options based on flight selection
-# @app.callback(
-#     Output('departure-dropdown', 'options'),
-#     Input('flight-dropdown', 'value')
-# )
-# def update_departure_dropdown_options(flight_number):
-#     departure_times = df[df['flightNumber'] == flight_number]['departureTime'].unique()
-#     options = [{'label': dt.strftime('%Y-%m-%d %H:%M'), 'value': dt} for dt in departure_times]
-#     return options
 
 # Run the app
 if __name__ == '__main__':
