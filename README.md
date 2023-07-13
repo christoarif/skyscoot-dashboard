@@ -1,3 +1,5 @@
+Done in 1hour by ChatGPT prompting
+
 This repository is for airline staff to monitor in-flight sales data for different destinations and flights. This is important for inventory management, minimise waste and maximise revenue.
 
 To reproduce:
